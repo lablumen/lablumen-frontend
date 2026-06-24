@@ -14,8 +14,8 @@ ARG VITE_COGNITO_DOMAIN=""
 
 ENV VITE_APPOINTMENT_API=$VITE_APPOINTMENT_API
 ENV VITE_REPORT_API=$VITE_REPORT_API
-ENV VITE_COGNITO_USER_POOL_ID=$VITE_COGNITO_USER_POOL_ID
-ENV VITE_COGNITO_APP_CLIENT_ID=$VITE_COGNITO_APP_CLIENT_ID
+ENV VITE_COGNITO_USER_POOL_ID=__VITE_COGNITO_USER_POOL_ID__
+ENV VITE_COGNITO_APP_CLIENT_ID=__VITE_COGNITO_APP_CLIENT_ID__
 ENV VITE_COGNITO_DOMAIN=$VITE_COGNITO_DOMAIN
 
 RUN npm run build
@@ -24,4 +24,6 @@ FROM nginx:1.27-alpine
 RUN apk update && apk upgrade --no-cache
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY inject-env.sh /docker-entrypoint.d/40-inject-env.sh
+RUN chmod +x /docker-entrypoint.d/40-inject-env.sh
 EXPOSE 80
