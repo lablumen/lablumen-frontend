@@ -6,6 +6,7 @@ import { queryClient } from "@/lib/queryClient";
 import { ForgotPassword } from "@/routes/ForgotPassword";
 import { Landing } from "@/routes/Landing";
 import { Login } from "@/routes/Login";
+import { Register } from "@/routes/Register";
 import { PatientLayout } from "@/routes/PatientLayout";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { StaffLayout } from "@/routes/StaffLayout";
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
   // Public
   { path: "/",                element: <Landing /> },
   { path: "/login",           element: <Login /> },
+  { path: "/register",        element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
 
   // Patient routes

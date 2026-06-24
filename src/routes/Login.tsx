@@ -4,11 +4,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { isStaff } from "@/lib/auth";
 import { Eye, EyeOff, FlaskConical } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const justRegistered = searchParams.get("registered") === "true";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,6 +71,12 @@ export function Login() {
             <h1 className="text-2xl font-bold text-text-dark">Welcome back</h1>
             <p className="mt-1.5 text-sm text-text-muted">Sign in to your LabLumen account</p>
           </div>
+
+          {justRegistered && (
+            <div className="mb-6 rounded-lg border border-success/20 bg-success-50 px-4 py-3">
+              <p className="text-sm text-success font-medium">Account created! Sign in to get started.</p>
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
@@ -136,6 +144,13 @@ export function Login() {
               {submitting && <Spinner size="sm" className="text-white" />}
               {submitting ? "Signing in…" : "Sign in"}
             </button>
+
+            <p className="text-center text-sm text-text-muted">
+              Don't have an account?{" "}
+              <Link to="/register" className="font-medium text-primary hover:underline">
+                Create one
+              </Link>
+            </p>
           </form>
         </div>
       </div>
