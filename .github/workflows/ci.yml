@@ -1,34 +1,51 @@
 name: ci
 
-# PR -> build the Vite SPA (catch breakages). Merge to main -> deploy via the reusable workflow
-# (SSM discovery -> vite build -> s3 sync -> CloudFront invalidation). NOTE: the deploy needs CloudFront
-# enabled (enable_cloudfront=true in terraform); until then the deploy step's invalidation will fail.
+# PR     → service-pr.yml  (Node runtime: build + SonarCloud + Snyk + Trivy)
+# main   → service-build-push.yml  (ECR push + GitOps write-back to values-dev.yaml)
+# release → service-release.yml   (retag SHA→semver + write-back to values-prod.yaml)
 on:
   pull_request:
   push:
     branches: [main]
+  release:
+    types: [published]
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build:
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - run: npm run build
-
-  deploy:
-    if: ${{ github.event_name == 'push' }}
-    uses: lablumen/lablumen-shared/.github/workflows/frontend-deploy.yml@main
+  pr:
+    if: github.event_name == 'pull_request'
+    uses: lablumen/lablumen-shared/.github/workflows/service-pr.yml@main
     with:
+      service-name: frontend
       service-path: .
-      role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/lablumen-frontend-deploy
+      runtime: node
+      sonar-organization: ${{ vars.SONAR_ORGANIZATION }}
+      sonar-sources: src
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  build:
+    if: github.event_name == 'push'
+    uses: lablumen/lablumen-shared/.github/workflows/service-build-push.yml@main
+    with:
+      service-name: frontend
+      service-path: .
+      ecr-repository: lablumen/frontend
+      role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/lablumen-frontend-build
+    secrets:
+      K8S_REPO_PAT: ${{ secrets.K8S_REPO_PAT }}
+
+  release:
+    if: github.event_name == 'release'
+    uses: lablumen/lablumen-shared/.github/workflows/service-release.yml@main
+    with:
+      service-name: frontend
+      ecr-repository: lablumen/frontend
+      role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/lablumen-frontend-build
+      release-tag: ${{ github.event.release.tag_name }}
+    secrets:
+      K8S_REPO_PAT: ${{ secrets.K8S_REPO_PAT }}
